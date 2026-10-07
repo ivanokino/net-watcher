@@ -1,0 +1,31 @@
+[package]
+name = "my_project"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "handler"
+path = "src/backend/handler.rs" 
+
+[[bin]]
+name = "main"
+path = "src/main.rs" 
+
+
+
+#[profile.release]
+#debug = true
+
+
+[dependencies]
+libbpf-rs = "0.27.1" 
+eframe = "0.36.2"
+egui_extras = { version = "0.36.2", features = ["default"] }
+
+[build-dependencies]
+
+libbpf-cargo = "0.27.1"
+
+[lib]
+name = "common"
+path = "./src/include/lib.rs"

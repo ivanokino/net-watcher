@@ -1,0 +1,160 @@
+use common::net::run_data_streaming;
+use common::structs::SockGet;
+
+use eframe::egui::{self};
+use egui::Ui;
+use std::collections::VecDeque;
+use std::io::{Read, Write};
+use std::net::TcpStream;
+use std::sync::mpsc::{Receiver, Sender};
+
+pub struct GuiApp {
+    pub rx: Receiver<SockGet>,
+    pub sockets: VecDeque<SockGet>,
+    pub dropped_count: u32,
+    pub is_inf_click: bool,
+    pub selected_info: String,
+    pub det_stream: TcpStream,
+}
+impl eframe::App for GuiApp {
+    fn ui(&mut self, ui: &mut Ui, _frame: &mut eframe::Frame) {
+        while let Ok(socket_data) = self.rx.try_recv() {
+            self.sockets.push_back(socket_data);
+
+            if self.sockets.len() > 20000 {
+                self.sockets.pop_front();
+                self.dropped_count += 1;
+            }
+        }
+
+        ui.set_zoom_factor(2.0);
+        egui::CentralPanel::default().show(ui, |ui| {
+            // ui.input(|i| i.smooth_scroll_delta) й
+
+            ui.horizontal(|ui| {
+                ui.add_sized([80.0, 18.0], egui::Label::new("NUM"));
+                ui.add_sized([80.0, 18.0], egui::Label::new("PID"));
+                ui.add_sized([100.0, 18.0], egui::Label::new("FAMILY"));
+
+                ui.add_sized([100.0, 18.0], egui::Label::new("TYPE"));
+                ui.add_sized([100.0, 18.0], egui::Label::new("NAME"));
+            });
+            egui::ScrollArea::vertical()
+                .stick_to_bottom(true)
+                .auto_shrink([false, false])
+                .show_rows(ui, 18.0, self.sockets.len(), |ui, row_range| {
+                    for idx in row_range {
+                        let s = &self.sockets[idx];
+                        ui.horizontal(|ui| {
+                            ui.add_sized(
+                                [80.0, 18.0],
+                                egui::Label::new(format!(
+                                    "{}",
+                                    self.dropped_count + idx as u32 + 1
+                                )),
+                            );
+                            let mut response = ui.add_sized(
+                                [80.0, 18.0],
+                                egui::Label::new(s.pid.to_string()).sense(egui::Sense::click()),
+                            );
+                            if response.clicked() {
+                                let arr_bytes = s.pid.to_ne_bytes();
+                                let bytes = arr_bytes.as_slice();
+
+                                let _ = self.det_stream.write(bytes);
+
+                                let mut buff: [u8; 4096] = [0; 4096];
+
+                                let bytes_read = self.det_stream.read(&mut buff).unwrap_or(10);
+
+                                let inf = &mut buff[..bytes_read];
+
+                                for b in &mut *inf {
+                                    if *b == 0 {
+                                        *b = b' ';
+                                    }
+                                }
+
+                                let string_inf = String::from_utf8_lossy(inf).into_owned();
+
+                                self.selected_info = string_inf;
+                                self.is_inf_click = true;
+                            }
+
+                            response = ui.add_sized(
+                                [100.0, 18.0],
+                                egui::Label::new(s.family_name()).sense(egui::Sense::click()),
+                            );
+                            if response.clicked() {
+                                self.is_inf_click = true;
+                            }
+                            response = ui.add_sized(
+                                [100.0, 18.0],
+                                egui::Label::new(s.type_name()).sense(egui::Sense::click()),
+                            );
+                            if response.clicked() {
+                                self.is_inf_click = true;
+                            }
+                            response = ui.add_sized(
+                                [100.0, 18.0],
+                                egui::Label::new(s.comm_name()).sense(egui::Sense::click()),
+                            );
+                            if response.clicked() {
+                                self.is_inf_click = true;
+                            }
+                        });
+                    }
+                });
+
+            if self.is_inf_click {
+                egui::Window::new("SOCKET").show(ui.ctx(), |ui| {
+                    if ui.button("close").clicked() {
+                        self.is_inf_click = false;
+                    }
+
+                    ui.label(&self.selected_info);
+
+                    //                if ui.button("close").clicked() {
+                    //                      self.is_inf_click = false;
+                    //                    }
+                });
+            }
+        });
+
+        //ui.request_repaint_after(Duration::from_millis(35));
+    }
+}
+
+pub fn run_gui_and_data_streaming(
+    rx: Receiver<SockGet>,
+    det_stream: TcpStream,
+    tx: Sender<SockGet>,
+    stream: TcpStream,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let options = eframe::NativeOptions {
+        viewport: egui::ViewportBuilder::default().with_inner_size([620.0, 480.0]),
+        ..Default::default()
+    };
+
+    eframe::run_native(
+        "MY APP",
+        options,
+        Box::new(|cc| {
+            let ctx = cc.egui_ctx.clone();
+
+            run_data_streaming(tx, stream, ctx);
+
+            let app = GuiApp {
+                rx,
+                sockets: VecDeque::new(),
+                dropped_count: 0,
+                is_inf_click: false,
+                selected_info: "test".to_string(),
+                det_stream,
+            };
+            Ok(Box::new(app))
+        }),
+    )?;
+
+    Ok(())
+}
