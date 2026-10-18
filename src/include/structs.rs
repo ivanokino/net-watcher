@@ -1,13 +1,57 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, net::Ipv4Addr};
 
+#[derive(PartialEq, Clone, Copy)]
+pub enum Tab {
+    Socket,
+    Connect,
+}
+#[repr(C)]
+pub union HandlerOutput {
+    pub sock_get: SockGet,
+    pub conn_get: ConnGet,
+}
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct SockGet {
+    pub out_type: u8,
     pub pid: u32,
     pub family: u32,
     pub s_type: u32,
     pub comm: [u8; 16],
 }
+#[repr(C)]
+#[derive(PartialEq, Clone, Copy)]
+pub struct ConnGet {
+    pub out_type: u8,
+    pub pid: u32,
+    pub fd: u32,
+
+    pub family: i16,
+    pub addr: u32,
+}
+
+impl ConnGet {
+    #[allow(dead_code)]
+    pub fn family_name(&self) -> Cow<'static, str> {
+        match self.family {
+            0 => Cow::Borrowed("AF_UNSPEC"),
+            1 => Cow::Borrowed("AF_UNIX"),
+            2 => Cow::Borrowed("AF_INET"),
+            10 => Cow::Borrowed("AF_INET6"),
+            16 => Cow::Borrowed("AF_NETLINK"),
+            27 => Cow::Borrowed("AF_PACKET"),
+
+            _ => Cow::Owned(self.family.to_string()),
+        }
+    }
+
+    pub fn addr_string(&self) -> String {
+        let address = Ipv4Addr::from(self.addr.to_le_bytes());
+
+        address.to_string()
+    }
+}
+
 impl SockGet {
     #[allow(dead_code)]
     pub fn comm_name(&self) -> &str {

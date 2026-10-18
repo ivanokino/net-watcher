@@ -5,8 +5,9 @@ use std::net::{self, TcpStream};
 use std::ptr::read_unaligned;
 use std::sync::mpsc::Sender;
 
-use crate::structs::SockGet;
+use crate::structs::HandlerOutput;
 use std::fs;
+
 use std::io::Read;
 use std::io::Write;
 use std::thread;
@@ -82,16 +83,19 @@ fn get_info(pid: u32) -> String {
     final_output
 }
 
-pub fn run_data_streaming(tx: Sender<SockGet>, mut stream: TcpStream, ctx: Context) -> u8 {
+pub fn run_data_streaming(tx: Sender<HandlerOutput>, mut stream: TcpStream, ctx: Context) -> u8 {
     std::thread::spawn(move || {
         loop {
-            let mut buf = [0; size_of::<SockGet>()];
+            let mut buf = [0; size_of::<HandlerOutput>()];
 
             match stream.read_exact(&mut buf) {
                 Ok(()) => {}
-                Err(_) => break,
+                Err(e) => {
+                    println!("recv stop: kind={:?}, {e}", e.kind());
+                    break;
+                }
             };
-            let data: SockGet = unsafe { read_unaligned(buf.as_ptr() as *const SockGet) };
+            let data = unsafe { read_unaligned(buf.as_ptr() as *const HandlerOutput) };
             // println!("send data");
             let _ = tx.send(data);
             ctx.request_repaint();
