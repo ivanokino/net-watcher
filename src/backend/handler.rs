@@ -25,7 +25,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     run_detail_streaming(det_stream);
 
     let socket_callback = move |data: &[u8]| -> i32 {
-        if data.len() < mem::size_of::<HandlerOutput>() {
+        if data.len() > mem::size_of::<HandlerOutput>() {
             println!("bad data from buffer (socket)");
             return 0;
         }
@@ -42,10 +42,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     let connect_callback = move |data: &[u8]| -> i32 {
-        /*     if data.len() < mem::size_of::<HandlerOutput>() {
-                    return 0;
-                };
-        */
+        if data.len() > mem::size_of::<HandlerOutput>() {
+            return 0;
+        };
 
         let mut buff = [0; mem::size_of::<HandlerOutput>()];
         buff[..data.len()].copy_from_slice(data);

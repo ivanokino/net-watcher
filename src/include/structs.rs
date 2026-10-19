@@ -1,4 +1,7 @@
-use std::{borrow::Cow, net::Ipv4Addr};
+use std::{
+    borrow::Cow,
+    net::{Ipv4Addr, Ipv6Addr},
+};
 
 #[derive(PartialEq, Clone, Copy)]
 pub enum Tab {
@@ -12,6 +15,12 @@ pub union HandlerOutput {
 }
 #[repr(C)]
 #[derive(Clone, Copy)]
+pub union IpAddr {
+    pub ipv4: u32,
+    pub ipv6: u128,
+}
+#[repr(C)]
+#[derive(Clone, Copy)]
 pub struct SockGet {
     pub out_type: u8,
     pub pid: u32,
@@ -20,14 +29,14 @@ pub struct SockGet {
     pub comm: [u8; 16],
 }
 #[repr(C)]
-#[derive(PartialEq, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub struct ConnGet {
     pub out_type: u8,
     pub pid: u32,
     pub fd: u32,
 
     pub family: i16,
-    pub addr: u32,
+    pub addr: IpAddr,
 }
 
 impl ConnGet {
@@ -46,9 +55,17 @@ impl ConnGet {
     }
 
     pub fn addr_string(&self) -> String {
-        let address = Ipv4Addr::from(self.addr.to_le_bytes());
-
-        address.to_string()
+        if self.family == 10 {
+            unsafe {
+                let address = Ipv6Addr::from(self.addr.ipv6.to_le_bytes());
+                address.to_string()
+            }
+        } else {
+            unsafe {
+                let address = Ipv4Addr::from(self.addr.ipv4.to_le_bytes());
+                address.to_string()
+            }
+        }
     }
 }
 

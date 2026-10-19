@@ -23,7 +23,11 @@ struct connect_out {
   int pid;
   int fd;
   short family;
-  int addr;
+
+  union {
+    char v4[4];
+    char v6[16];
+  } addr;
 };
 struct trace_entry {
   unsigned short type;
@@ -94,11 +98,14 @@ int handler(struct connect_ctx *ctx) {
   bpf_probe_read_user((void *)&out_data->family, 2, addr);
 
   if (out_data->family == AF_INET) {
-    bpf_probe_read_user((void *)&out_data->addr, 4, addr + 4);
+    bpf_probe_read_user((void *)&out_data->addr.v4, 4, addr + 4);
+  }
+  if (out_data->family == AF_INET6) {
+
+    bpf_probe_read_user((void *)&out_data->addr.v6, 16, addr + 8);
   }
 
   out_data->fd = ctx->fd;
-
 
   out_data->out_type = 1;
   bpf_ringbuf_submit(out_data, 0);
