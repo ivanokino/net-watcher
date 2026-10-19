@@ -55,16 +55,18 @@ impl ConnGet {
     }
 
     pub fn addr_string(&self) -> String {
-        if self.family == 10 {
-            unsafe {
+        match self.family {
+            10 => unsafe {
                 let address = Ipv6Addr::from(self.addr.ipv6.to_le_bytes());
                 address.to_string()
-            }
-        } else {
-            unsafe {
+            },
+
+            2 => unsafe {
                 let address = Ipv4Addr::from(self.addr.ipv4.to_le_bytes());
                 address.to_string()
-            }
+            },
+
+            _ => "-".to_string(),
         }
     }
 }

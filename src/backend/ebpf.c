@@ -103,7 +103,11 @@ int handler(struct connect_ctx *ctx) {
   if (out_data->family == AF_INET6) {
 
     bpf_probe_read_user((void *)&out_data->addr.v6, 16, addr + 8);
-  }
+  } /* else {
+    for (int i = 0; i < 4; i++) {
+      out_data->addr.v4[i] = 0;
+    }
+  } */ 
 
   out_data->fd = ctx->fd;
 
