@@ -212,10 +212,7 @@ impl eframe::App for GuiApp {
                                 if response.clicked() {
                                     self.is_inf_click = true;
                                 }
-                                /*response = ui.add_sized(
-                                     [100.0, 18.0],
-                                     egui::Label::new(s.addr_string()).sense(egui::Sense::click()),
-                                ); */
+
                                 response = ui.add(
                                     egui::Label::new(s.addr_string()).sense(egui::Sense::click()),
                                 );
@@ -226,16 +223,12 @@ impl eframe::App for GuiApp {
                         }
                     });
                 if self.is_inf_click {
-                    egui::Window::new("CONNECTT").show(ui.ctx(), |ui| {
+                    egui::Window::new("CONNECT").show(ui.ctx(), |ui| {
                         if ui.button("close").clicked() {
                             self.is_inf_click = false;
                         }
 
                         ui.label(&self.selected_info);
-
-                        //                if ui.button("close").clicked() {
-                        //                      self.is_inf_click = false;
-                        //                    }
                     });
                 }
             }
