@@ -70,65 +70,53 @@ impl eframe::App for GuiApp {
                         .show_rows(ui, 18.0, self.sockets.len(), |ui, row_range| {
                             for idx in row_range {
                                 let s = &self.sockets[idx];
+
+                                let dropped_count = self.dropped_count;
+                                let pid = s.pid;
+                                let family = s.family_name();
+                                let type_ = s.type_name();
+                                let comm_name = s.comm_name().to_string();
                                 ui.horizontal(|ui| {
                                     ui.add_sized(
                                         [80.0, 18.0],
                                         egui::Label::new(format!(
                                             "{}",
-                                            self.dropped_count + idx as u32 + 1
+                                            dropped_count + idx as u32 + 1
                                         )),
                                     );
                                     let mut response = ui.add_sized(
                                         [80.0, 18.0],
-                                        egui::Label::new(s.pid.to_string())
-                                            .sense(egui::Sense::click()),
-                                    );
-                                    if response.clicked() {
-                                        let arr_bytes = s.pid.to_ne_bytes();
-                                        let bytes = arr_bytes.as_slice();
-
-                                        let _ = self.det_stream.write(bytes);
-
-                                        let mut buff: [u8; 4096] = [0; 4096];
-
-                                        let bytes_read =
-                                            self.det_stream.read(&mut buff).unwrap_or(10);
-
-                                        let inf = &mut buff[..bytes_read];
-
-                                        for b in &mut *inf {
-                                            if *b == 0 {
-                                                *b = b' ';
-                                            }
-                                        }
-
-                                        let string_inf = String::from_utf8_lossy(inf).into_owned();
-
-                                        self.selected_info = string_inf;
-                                        self.is_inf_click = true;
-                                    }
-
-                                    response = ui.add_sized(
-                                        [100.0, 18.0],
-                                        egui::Label::new(s.family_name())
+                                        egui::Label::new(pid.to_string())
                                             .sense(egui::Sense::click()),
                                     );
                                     if response.clicked() {
                                         self.is_inf_click = true;
+                                        get_det_data(self, pid);
                                     }
+
                                     response = ui.add_sized(
                                         [100.0, 18.0],
-                                        egui::Label::new(s.type_name()).sense(egui::Sense::click()),
+                                        egui::Label::new(family).sense(egui::Sense::click()),
                                     );
                                     if response.clicked() {
                                         self.is_inf_click = true;
+                                        get_det_data(self, pid);
                                     }
                                     response = ui.add_sized(
                                         [100.0, 18.0],
-                                        egui::Label::new(s.comm_name()).sense(egui::Sense::click()),
+                                        egui::Label::new(type_).sense(egui::Sense::click()),
                                     );
                                     if response.clicked() {
                                         self.is_inf_click = true;
+                                        get_det_data(self, pid);
+                                    }
+                                    response = ui.add_sized(
+                                        [100.0, 18.0],
+                                        egui::Label::new(comm_name).sense(egui::Sense::click()),
+                                    );
+                                    if response.clicked() {
+                                        self.is_inf_click = true;
+                                        get_det_data(self, pid);
                                     }
                                 });
                             }
@@ -163,72 +151,65 @@ impl eframe::App for GuiApp {
                     .auto_shrink([false, false])
                     .show_rows(ui, 18.0, self.connects.len(), |ui, row_range| {
                         for idx in row_range {
+                            let dropped_count_connect = self.dropped_count_connect;
                             let s = &self.connects[idx];
+                            let pid = s.pid;
+                            let fd = s.fd;
+                            let family = s.family_name();
+                            let port = s.port_name();
+
+                            let addr = s.addr_string();
                             ui.horizontal(|ui| {
                                 ui.add_sized(
                                     [80.0, 18.0],
                                     egui::Label::new(format!(
                                         "{}",
-                                        self.dropped_count_connect + idx as u32 + 1
+                                        dropped_count_connect + idx as u32 + 1
                                     )),
                                 );
+
                                 let mut response = ui.add_sized(
                                     [80.0, 18.0],
-                                    egui::Label::new(s.pid.to_string()).sense(egui::Sense::click()),
+                                    egui::Label::new(pid.to_string()).sense(egui::Sense::click()),
                                 );
                                 if response.clicked() {
-                                    let arr_bytes = s.pid.to_ne_bytes();
-                                    let bytes = arr_bytes.as_slice();
-
-                                    let _ = self.det_stream.write(bytes);
-
-                                    let mut buff: [u8; 4096] = [0; 4096];
-
-                                    let bytes_read = self.det_stream.read(&mut buff).unwrap_or(10);
-
-                                    let inf = &mut buff[..bytes_read];
-
-                                    for b in &mut *inf {
-                                        if *b == 0 {
-                                            *b = b' ';
-                                        }
-                                    }
-
-                                    let string_inf = String::from_utf8_lossy(inf).into_owned();
-
-                                    self.selected_info = string_inf;
                                     self.is_inf_click = true;
+                                    get_det_data(self, pid);
                                 }
 
                                 response = ui.add_sized(
                                     [100.0, 18.0],
-                                    egui::Label::new(s.fd.to_string()).sense(egui::Sense::click()),
+                                    egui::Label::new(fd.to_string()).sense(egui::Sense::click()),
                                 );
                                 if response.clicked() {
                                     self.is_inf_click = true;
+                                    get_det_data(self, pid);
                                 }
                                 response = ui.add_sized(
                                     [100.0, 18.0],
-                                    egui::Label::new(s.family_name()).sense(egui::Sense::click()),
+                                    egui::Label::new(family).sense(egui::Sense::click()),
                                 );
                                 if response.clicked() {
                                     self.is_inf_click = true;
+                                    get_det_data(self, pid);
                                 }
 
                                 response = ui.add_sized(
                                     [200.0, 18.0],
-                                    egui::Label::new(s.addr_string()).sense(egui::Sense::click()),
+                                    egui::Label::new(addr).sense(egui::Sense::click()),
                                 );
                                 if response.clicked() {
                                     self.is_inf_click = true;
+                                    get_det_data(self, pid);
                                 }
 
                                 response = ui.add_sized(
                                     [100.0, 18.0],
-                                    egui::Label::new(s.port_name()).sense(egui::Sense::click()),
+                                    egui::Label::new(port).sense(egui::Sense::click()),
                                 );
                                 if response.clicked() {
                                     self.is_inf_click = true;
+                                    get_det_data(self, pid);
                                 }
                             });
                         }
@@ -284,4 +265,28 @@ pub fn run_gui_and_data_streaming(
     )?;
 
     Ok(())
+}
+
+fn get_det_data(app: &mut GuiApp, pid: u32) {
+    let arr_bytes = pid.to_ne_bytes();
+    let bytes = arr_bytes.as_slice();
+
+    let _ = app.det_stream.write(bytes);
+
+    let mut buff: [u8; 4096] = [0; 4096];
+
+    let bytes_read = app.det_stream.read(&mut buff).unwrap_or(10);
+
+    let inf = &mut buff[..bytes_read];
+
+    for b in &mut *inf {
+        if *b == 0 {
+            *b = b' ';
+        }
+    }
+
+    let string_inf = String::from_utf8_lossy(inf).into_owned();
+
+    app.selected_info = string_inf;
+    app.is_inf_click = true;
 }
