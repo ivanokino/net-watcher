@@ -11,8 +11,8 @@ pub union HandlerOutput {
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub union IpAddr {
-    pub ipv4: u32,
-    pub ipv6: u128,
+    pub ipv4: [u8; 4],
+    pub ipv6: [u8; 16],
 }
 #[repr(C)]
 #[derive(Clone, Copy)]
@@ -32,6 +32,7 @@ pub struct ConnGet {
 
     pub family: i16,
     pub addr: IpAddr,
+    pub port: u16,
 }
 
 #[path = "./structs_impl.rs"]

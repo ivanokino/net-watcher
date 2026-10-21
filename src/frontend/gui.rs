@@ -153,7 +153,9 @@ impl eframe::App for GuiApp {
                     ui.add_sized([100.0, 18.0], egui::Label::new("FD"));
 
                     ui.add_sized([100.0, 18.0], egui::Label::new("FAMILY"));
-                    ui.add_sized([100.0, 18.0], egui::Label::new("ADDRESS"));
+                    ui.add_sized([200.0, 18.0], egui::Label::new("ADDRESS"));
+
+                    ui.add_sized([100.0, 18.0], egui::Label::new("PORT"));
                 });
 
                 egui::ScrollArea::vertical()
@@ -213,8 +215,17 @@ impl eframe::App for GuiApp {
                                     self.is_inf_click = true;
                                 }
 
-                                response = ui.add(
+                                response = ui.add_sized(
+                                    [200.0, 18.0],
                                     egui::Label::new(s.addr_string()).sense(egui::Sense::click()),
+                                );
+                                if response.clicked() {
+                                    self.is_inf_click = true;
+                                }
+
+                                response = ui.add_sized(
+                                    [100.0, 18.0],
+                                    egui::Label::new(s.port_name()).sense(egui::Sense::click()),
                                 );
                                 if response.clicked() {
                                     self.is_inf_click = true;

@@ -96,7 +96,6 @@ pub fn run_data_streaming(tx: Sender<HandlerOutput>, mut stream: TcpStream, ctx:
                 }
             };
             let data = unsafe { read_unaligned(buf.as_ptr() as *const HandlerOutput) };
-            // println!("send data");
             let _ = tx.send(data);
             ctx.request_repaint();
         }

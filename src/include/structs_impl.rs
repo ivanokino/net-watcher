@@ -19,17 +19,27 @@ impl ConnGet {
     pub fn addr_string(&self) -> String {
         match self.family {
             10 => unsafe {
-                let address = Ipv6Addr::from(self.addr.ipv6.to_le_bytes());
+                let address = Ipv6Addr::from(self.addr.ipv6);
+
                 address.to_string()
             },
 
             2 => unsafe {
-                let address = Ipv4Addr::from(self.addr.ipv4.to_le_bytes());
+                let address = Ipv4Addr::from(self.addr.ipv4);
                 address.to_string()
             },
 
             _ => "-".to_string(),
         }
+    }
+    pub fn port_name(&self) -> String {
+        let port = u16::from_be(self.port).to_string();
+
+        if self.family == 1 {
+            return "-".to_string();
+        }
+
+        port
     }
 }
 
