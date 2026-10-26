@@ -12,14 +12,18 @@ use std::sync::mpsc::{Receiver, Sender};
 mod render_funcs;
 use render_funcs::{render_connect, render_socket};
 
+use crate::gui::render_funcs::render_bind;
+
 pub struct GuiApp {
     pub current_tab: Tab,
 
     pub rx: Receiver<HandlerOutput>,
     pub sockets: VecDeque<SockGet>,
     pub connects: VecDeque<ConnGet>,
+    pub binds: VecDeque<ConnGet>,
     pub dropped_count: u32,
     pub dropped_count_connect: u32,
+    pub dropped_count_bind: u32,
     pub is_inf_click: bool,
     pub selected_info: String,
     pub det_stream: TcpStream,
@@ -31,6 +35,7 @@ impl eframe::App for GuiApp {
             ui.selectable_value(&mut self.current_tab, Tab::Socket, "SOCKET()");
 
             ui.selectable_value(&mut self.current_tab, Tab::Connect, "CONNECT");
+            ui.selectable_value(&mut self.current_tab, Tab::Bind, "BIND");
         });
         while let Ok(data) = self.rx.try_recv() {
             let out_type: u8 = unsafe { data.conn_get.out_type };
@@ -42,11 +47,18 @@ impl eframe::App for GuiApp {
                         self.dropped_count += 1;
                     }
                 },
-                _ => unsafe {
+                1 => unsafe {
                     self.connects.push_back(data.conn_get);
                     if self.connects.len() > 20000 {
                         self.connects.pop_front();
                         self.dropped_count_connect += 1;
+                    }
+                },
+                _ => unsafe {
+                    self.binds.push_back(data.bind_get);
+                    if self.binds.len() > 20000 {
+                        self.binds.pop_front();
+                        self.dropped_count_bind += 1;
                     }
                 },
             }
@@ -59,6 +71,9 @@ impl eframe::App for GuiApp {
             }
             Tab::Connect => {
                 render_connect(self, ui);
+            }
+            Tab::Bind => {
+                render_bind(self, ui);
             }
         }
     }
@@ -88,10 +103,12 @@ pub fn run_gui_and_data_streaming(
                 rx,
                 sockets: VecDeque::new(),
                 connects: VecDeque::new(),
+                binds: VecDeque::new(),
                 dropped_count: 0,
                 dropped_count_connect: 0,
+                dropped_count_bind: 0,
                 is_inf_click: false,
-                selected_info: "test".to_string(),
+                selected_info: "err".to_string(),
                 det_stream,
             };
             Ok(Box::new(app))

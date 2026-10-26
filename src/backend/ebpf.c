@@ -91,7 +91,6 @@ int handler(struct connect_ctx *ctx) {
   if (!out_data)
     return 0;
 
-  // bpf_get_current_comm(data->name, sizeof(data->name));
   char *addr = (char *)ctx->user_adr; // sockaddr_in
 
   out_data->pid = (__u32)((bpf_get_current_pid_tgid() >> 32));
@@ -108,16 +107,45 @@ int handler(struct connect_ctx *ctx) {
     bpf_probe_read_user((void *)&out_data->addr.v6, 16, addr + 8);
 
     bpf_probe_read_user((void *)&out_data->port, 2, addr + 2);
-   //  bpf_printk("port = %d", (short)out_data->port);
-  } /* else {
-    for (int i = 0; i < 4; i++) {
-      out_data->addr.v4[i] = 0;
-    }
-  } */
+  }
 
   out_data->fd = ctx->fd;
 
   out_data->out_type = 1;
+  bpf_ringbuf_submit(out_data, 0);
+
+  return 0;
+}
+
+SEC("tp/syscalls/sys_enter_bind")
+int bind_handler(struct connect_ctx *ctx) {
+
+  struct connect_out *out_data =
+      bpf_ringbuf_reserve(&ringbuff_connect, sizeof(struct connect_out), 0);
+  if (!out_data)
+    return 0;
+
+  char *addr = (char *)ctx->user_adr; // sockaddr_in
+
+  out_data->pid = (__u32)((bpf_get_current_pid_tgid() >> 32));
+
+  bpf_probe_read_user((void *)&out_data->family, 2, addr);
+
+  if (out_data->family == AF_INET) {
+    bpf_probe_read_user((void *)&out_data->addr.v4, 4, addr + 4);
+
+    bpf_probe_read_user((void *)&out_data->port, 2, addr + 2);
+  }
+  if (out_data->family == AF_INET6) {
+
+    bpf_probe_read_user((void *)&out_data->addr.v6, 16, addr + 8);
+
+    bpf_probe_read_user((void *)&out_data->port, 2, addr + 2);
+  }
+
+  out_data->fd = ctx->fd;
+
+  out_data->out_type = 2;
   bpf_ringbuf_submit(out_data, 0);
 
   return 0;

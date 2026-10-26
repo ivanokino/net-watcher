@@ -2,11 +2,13 @@
 pub enum Tab {
     Socket,
     Connect,
+    Bind,
 }
 #[repr(C)]
 pub union HandlerOutput {
     pub sock_get: SockGet,
     pub conn_get: ConnGet,
+    pub bind_get: ConnGet,
 }
 #[repr(C)]
 #[derive(Clone, Copy)]
