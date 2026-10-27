@@ -10,7 +10,7 @@ impl ConnGet {
             2 => Cow::Borrowed("AF_INET"),
             10 => Cow::Borrowed("AF_INET6"),
             16 => Cow::Borrowed("AF_NETLINK"),
-            27 => Cow::Borrowed("AF_PACKET"),
+            17 => Cow::Borrowed("AF_PACKET"),
 
             _ => Cow::Owned(self.family.to_string()),
         }
@@ -39,6 +39,9 @@ impl ConnGet {
             return "-".to_string();
         }
 
+        if self.port == 0 {
+            return "dynamic".to_string();
+        }
         port
     }
 }
