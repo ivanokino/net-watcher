@@ -91,7 +91,7 @@ pub fn run_gui_and_data_streaming(
     };
 
     eframe::run_native(
-        "MY APP",
+        "NetWatcher",
         options,
         Box::new(|cc| {
             let ctx = cc.egui_ctx.clone();

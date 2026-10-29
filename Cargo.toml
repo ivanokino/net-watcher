@@ -19,8 +19,8 @@ path = "src/main.rs"
 
 [dependencies]
 libbpf-rs = "0.27.1" 
-eframe = "0.36.2"
-egui_extras = { version = "0.36.2", features = ["default"] }
+eframe = "0.37.0"
+egui_extras = { version = "0.37.0", features = ["default"] }
 
 [build-dependencies]
 

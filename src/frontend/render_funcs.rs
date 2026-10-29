@@ -1,164 +1,135 @@
+use crate::gui::{GuiApp, get_det_data};
 use eframe::egui;
 use egui::Ui;
+use egui_extras::{Column, TableBuilder};
 
-use crate::gui::{GuiApp, get_det_data};
 pub fn render_socket(app: &mut GuiApp, ui: &mut Ui) {
-    egui::CentralPanel::default().show(ui, |ui| {
-        // ui.input(|i| i.smooth_scroll_delta) й
+    TableBuilder::new(ui)
+        .striped(true)
+        .sense(egui::Sense::click())
+        .stick_to_bottom(true)
+        .column(Column::exact(70.0)) // NUM
+        .column(Column::exact(90.0)) // PID
+        .column(Column::exact(100.0)) //FAMILY
+        .column(Column::exact(100.0)) // TYPE
+        .column(Column::exact(120.0)) //NAME
+        .header(24.0, |mut header| {
+            header.col(|ui| {
+                ui.strong("NUM");
+            });
+            header.col(|ui| {
+                ui.strong("PID");
+            });
+            header.col(|ui| {
+                ui.strong("FAMILY");
+            });
 
-        ui.horizontal(|ui| {
-            ui.add_sized([80.0, 18.0], egui::Label::new("NUM"));
-            ui.add_sized([80.0, 18.0], egui::Label::new("PID"));
-            ui.add_sized([100.0, 18.0], egui::Label::new("FAMILY"));
+            header.col(|ui| {
+                ui.strong("TYPE");
+            });
+            header.col(|ui| {
+                ui.strong("NAME");
+            });
+        })
+        .body(|body| {
+            body.rows(20.0, app.sockets.len(), |mut row| {
+                let idx = row.index();
+                let s = &app.sockets[idx];
+                row.col(|ui| {
+                    ui.label((app.dropped_count + idx as u32 + 1).to_string());
+                });
+                row.col(|ui| {
+                    ui.label(s.pid.to_string());
+                });
+                row.col(|ui| {
+                    ui.label(s.family_name());
+                });
+                row.col(|ui| {
+                    ui.label(s.type_name());
+                });
 
-            ui.add_sized([100.0, 18.0], egui::Label::new("TYPE"));
-            ui.add_sized([100.0, 18.0], egui::Label::new("NAME"));
+                row.col(|ui| {
+                    ui.label(s.comm_name());
+                });
+                if row.response().clicked() {
+                    app.is_inf_click = true;
+                    get_det_data(app, s.pid);
+                }
+            });
         });
-        egui::ScrollArea::vertical()
-            .stick_to_bottom(true)
-            .auto_shrink([false, false])
-            .show_rows(ui, 18.0, app.sockets.len(), |ui, row_range| {
-                for idx in row_range {
-                    let s = &app.sockets[idx];
+    if app.is_inf_click {
+        egui::Window::new("SOCKET").show(ui.ctx(), |ui| {
+            if ui.button("close").clicked() {
+                app.is_inf_click = false;
+            }
 
-                    let dropped_count = app.dropped_count;
-                    let pid = s.pid;
-                    let family = s.family_name();
-                    let type_ = s.type_name();
-                    let comm_name = s.comm_name().to_string();
-                    ui.horizontal(|ui| {
-                        ui.add_sized(
-                            [80.0, 18.0],
-                            egui::Label::new(format!("{}", dropped_count + idx as u32 + 1)),
-                        );
-                        let mut response = ui.add_sized(
-                            [80.0, 18.0],
-                            egui::Label::new(pid.to_string()).sense(egui::Sense::click()),
-                        );
-                        if response.clicked() {
-                            app.is_inf_click = true;
-                            get_det_data(app, pid);
-                        }
-
-                        response = ui.add_sized(
-                            [100.0, 18.0],
-                            egui::Label::new(family).sense(egui::Sense::click()),
-                        );
-                        if response.clicked() {
-                            app.is_inf_click = true;
-                            get_det_data(app, pid);
-                        }
-                        response = ui.add_sized(
-                            [100.0, 18.0],
-                            egui::Label::new(type_).sense(egui::Sense::click()),
-                        );
-                        if response.clicked() {
-                            app.is_inf_click = true;
-                            get_det_data(app, pid);
-                        }
-                        response = ui.add_sized(
-                            [100.0, 18.0],
-                            egui::Label::new(comm_name).sense(egui::Sense::click()),
-                        );
-                        if response.clicked() {
-                            app.is_inf_click = true;
-                            get_det_data(app, pid);
-                        }
-                    });
-                }
-            });
-
-        if app.is_inf_click {
-            egui::Window::new("SOCKET").show(ui.ctx(), |ui| {
-                if ui.button("close").clicked() {
-                    app.is_inf_click = false;
-                }
-
-                ui.label(&app.selected_info);
-            });
-        }
-    });
+            ui.label(&app.selected_info);
+        });
+    }
 }
 
 pub fn render_connect(app: &mut GuiApp, ui: &mut Ui) {
-    ui.horizontal(|ui| {
-        ui.add_sized([80.0, 18.0], egui::Label::new("NUM"));
-        ui.add_sized([80.0, 18.0], egui::Label::new("PID"));
-        ui.add_sized([100.0, 18.0], egui::Label::new("FD"));
-
-        ui.add_sized([100.0, 18.0], egui::Label::new("FAMILY"));
-        ui.add_sized([200.0, 18.0], egui::Label::new("ADDRESS"));
-
-        ui.add_sized([100.0, 18.0], egui::Label::new("PORT"));
-    });
-
-    egui::ScrollArea::vertical()
+    TableBuilder::new(ui)
+        .striped(true)
+        .sense(egui::Sense::click())
         .stick_to_bottom(true)
-        .auto_shrink([false, false])
-        .show_rows(ui, 18.0, app.connects.len(), |ui, row_range| {
-            for idx in row_range {
-                let dropped_count_connect = app.dropped_count_connect;
+        .column(Column::exact(70.0)) // NUM
+        .column(Column::exact(90.0)) // PID
+        .column(Column::exact(65.0)) // FD
+        .column(Column::exact(100.0)) //FAMILY
+        .column(Column::exact(100.0)) // TYPE
+        .column(Column::exact(70.0)) //PORT
+        .header(24.0, |mut header| {
+            header.col(|ui| {
+                ui.strong("NUM");
+            });
+            header.col(|ui| {
+                ui.strong("PID");
+            });
+            header.col(|ui| {
+                ui.strong("FD");
+            });
+            header.col(|ui| {
+                ui.strong("FAMILY");
+            });
+            header.col(|ui| {
+                ui.strong("ADDRESS");
+            });
+            header.col(|ui| {
+                ui.strong("PORT");
+            });
+        })
+        .body(|body| {
+            body.rows(20.0, app.connects.len(), |mut row| {
+                let idx = row.index();
                 let s = &app.connects[idx];
-                let pid = s.pid;
-                let fd = s.fd;
-                let family = s.family_name();
-                let port = s.port_name();
-
-                let addr = s.addr_string();
-                ui.horizontal(|ui| {
-                    ui.add_sized(
-                        [80.0, 18.0],
-                        egui::Label::new(format!("{}", dropped_count_connect + idx as u32 + 1)),
-                    );
-
-                    let mut response = ui.add_sized(
-                        [80.0, 18.0],
-                        egui::Label::new(pid.to_string()).sense(egui::Sense::click()),
-                    );
-                    if response.clicked() {
-                        app.is_inf_click = true;
-                        get_det_data(app, pid);
-                    }
-
-                    response = ui.add_sized(
-                        [100.0, 18.0],
-                        egui::Label::new(fd.to_string()).sense(egui::Sense::click()),
-                    );
-                    if response.clicked() {
-                        app.is_inf_click = true;
-                        get_det_data(app, pid);
-                    }
-                    response = ui.add_sized(
-                        [100.0, 18.0],
-                        egui::Label::new(family).sense(egui::Sense::click()),
-                    );
-                    if response.clicked() {
-                        app.is_inf_click = true;
-                        get_det_data(app, pid);
-                    }
-
-                    response = ui.add_sized(
-                        [200.0, 18.0],
-                        egui::Label::new(addr).sense(egui::Sense::click()),
-                    );
-                    if response.clicked() {
-                        app.is_inf_click = true;
-                        get_det_data(app, pid);
-                    }
-
-                    response = ui.add_sized(
-                        [100.0, 18.0],
-                        egui::Label::new(port).sense(egui::Sense::click()),
-                    );
-                    if response.clicked() {
-                        app.is_inf_click = true;
-                        get_det_data(app, pid);
-                    }
+                row.col(|ui| {
+                    ui.label((app.dropped_count_connect + idx as u32 + 1).to_string());
                 });
-            }
+                row.col(|ui| {
+                    ui.label(s.pid.to_string());
+                });
+                row.col(|ui| {
+                    ui.label(s.fd.to_string());
+                });
+                row.col(|ui| {
+                    ui.label(s.family_name());
+                });
+
+                row.col(|ui| {
+                    ui.label(s.addr_string());
+                });
+                row.col(|ui| {
+                    ui.label(s.port_name());
+                });
+                if row.response().clicked() {
+                    app.is_inf_click = true;
+                    get_det_data(app, s.pid);
+                }
+            });
         });
     if app.is_inf_click {
-        egui::Window::new("CONNECT").show(ui.ctx(), |ui| {
+        egui::Window::new("BIND").show(ui.ctx(), |ui| {
             if ui.button("close").clicked() {
                 app.is_inf_click = false;
             }
@@ -168,81 +139,65 @@ pub fn render_connect(app: &mut GuiApp, ui: &mut Ui) {
     }
 }
 pub fn render_bind(app: &mut GuiApp, ui: &mut Ui) {
-    ui.horizontal(|ui| {
-        ui.add_sized([80.0, 18.0], egui::Label::new("NUM"));
-        ui.add_sized([80.0, 18.0], egui::Label::new("PID"));
-        ui.add_sized([100.0, 18.0], egui::Label::new("FD"));
-
-        ui.add_sized([100.0, 18.0], egui::Label::new("FAMILY"));
-        ui.add_sized([200.0, 18.0], egui::Label::new("ADDRESS"));
-
-        ui.add_sized([100.0, 18.0], egui::Label::new("PORT"));
-    });
-
-    egui::ScrollArea::vertical()
+    TableBuilder::new(ui)
+        .striped(true)
+        .sense(egui::Sense::click())
         .stick_to_bottom(true)
-        .auto_shrink([false, false])
-        .show_rows(ui, 18.0, app.binds.len(), |ui, row_range| {
-            for idx in row_range {
-                let dropped_count_bind = app.dropped_count_bind;
+        .column(Column::exact(70.0)) // NUM
+        .column(Column::exact(90.0)) // PID
+        .column(Column::exact(90.0)) // PID
+        .column(Column::exact(100.0)) //FAMILY
+        .column(Column::exact(100.0)) // TYPE
+        .column(Column::exact(70.0)) //PORT
+        .header(24.0, |mut header| {
+            header.col(|ui| {
+                ui.strong("NUM");
+            });
+            header.col(|ui| {
+                ui.strong("PID");
+            });
+            header.col(|ui| {
+                ui.strong("FD");
+            });
+
+            header.col(|ui| {
+                ui.strong("FAMILY");
+            });
+            header.col(|ui| {
+                ui.strong("ADDRESS");
+            });
+            header.col(|ui| {
+                ui.strong("PORT");
+            });
+        })
+        .body(|body| {
+            body.rows(20.0, app.binds.len(), |mut row| {
+                let idx = row.index();
                 let s = &app.binds[idx];
-                let pid = s.pid;
-                let fd = s.fd;
-                let family = s.family_name();
-                let port = s.port_name();
-
-                let addr = s.addr_string();
-                ui.horizontal(|ui| {
-                    ui.add_sized(
-                        [80.0, 18.0],
-                        egui::Label::new(format!("{}", dropped_count_bind + idx as u32 + 1)),
-                    );
-
-                    let mut response = ui.add_sized(
-                        [80.0, 18.0],
-                        egui::Label::new(pid.to_string()).sense(egui::Sense::click()),
-                    );
-                    if response.clicked() {
-                        app.is_inf_click = true;
-                        get_det_data(app, pid);
-                    }
-
-                    response = ui.add_sized(
-                        [100.0, 18.0],
-                        egui::Label::new(fd.to_string()).sense(egui::Sense::click()),
-                    );
-                    if response.clicked() {
-                        app.is_inf_click = true;
-                        get_det_data(app, pid);
-                    }
-                    response = ui.add_sized(
-                        [100.0, 18.0],
-                        egui::Label::new(family).sense(egui::Sense::click()),
-                    );
-                    if response.clicked() {
-                        app.is_inf_click = true;
-                        get_det_data(app, pid);
-                    }
-
-                    response = ui.add_sized(
-                        [200.0, 18.0],
-                        egui::Label::new(addr).sense(egui::Sense::click()),
-                    );
-                    if response.clicked() {
-                        app.is_inf_click = true;
-                        get_det_data(app, pid);
-                    }
-
-                    response = ui.add_sized(
-                        [100.0, 18.0],
-                        egui::Label::new(port).sense(egui::Sense::click()),
-                    );
-                    if response.clicked() {
-                        app.is_inf_click = true;
-                        get_det_data(app, pid);
-                    }
+                row.col(|ui| {
+                    ui.label((app.dropped_count_bind + idx as u32 + 1).to_string());
                 });
-            }
+                row.col(|ui| {
+                    ui.label(s.pid.to_string());
+                });
+                row.col(|ui| {
+                    ui.label(s.fd.to_string());
+                });
+                row.col(|ui| {
+                    ui.label(s.family_name());
+                });
+
+                row.col(|ui| {
+                    ui.label(s.addr_string());
+                });
+                row.col(|ui| {
+                    ui.label(s.port_name());
+                });
+                if row.response().clicked() {
+                    app.is_inf_click = true;
+                    get_det_data(app, s.pid);
+                }
+            });
         });
     if app.is_inf_click {
         egui::Window::new("BIND").show(ui.ctx(), |ui| {
