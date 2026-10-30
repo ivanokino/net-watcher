@@ -1,23 +1,32 @@
 # net-watcher 
-
 ebpf monitoring program with GUI and handler on rust
 
 
-## High-Level Architecture
+## high level architecture 
 
 ```text
-  +------------+          +---------------+
-  |  ebpf.c    | -------> | Ring Buffer   |
-  +------------+          +---------------+
-                                  |
-                                  v
-+------------+            +---------------+          +--------------+
-| /proc/...  | <--------> |  handler.rs   | -------> |   main.rs    |
-+------------+            +---------------+          | (egui GUI)   |
-                                  ^                  +--------------+
-                                  |                         |
-                                  +---- detail stream ------+
-
+ 
++--------------------------------------------------------+
+|              tracepoints (ebpf.c)                      |
+|                     |                                  |
+|                     v                                  |
+|                [ringbuffs]                             |
++--------------------------------------------------------+
+                     |                         
+                     |
+                     |           
+                     V             
+      +-----------------------------------+
+      |            handler.rs (root)      |
+      +-----------------------------------+<-------+
+        |   (127.0.0.1:8085)        ^              |
+        |                           |              |   (127.0.0.1:8086)
+        v                           |              v
+      +-----------------------------------+      +-------------+
+      |         main.rs (not root, GUI)   |      | /proc/<pid>/|
+      +-----------------------------------+      +-------------+
+                                                   read by the
+                                                   handler on request
 ```
 
 
@@ -27,14 +36,10 @@ ebpf monitoring program with GUI and handler on rust
 * Rust: `cargo`, `rustc`
 * Permissions: Root / `sudo` access (for BPF loading)
 
-### Quick Install
-
+#### Make
 ```bash
-# Fedora
-sudo dnf install clang bpftool libbpf-devel make
-
-# Ubuntu/Debian
-sudo apt install clang linux-tools-generic libbpf-dev make
+make        # debug build: compile ebpf.c, load and attach it, build, run
+make rel    # same, but with a release build
+make clean  # remove pinned BPF objects and stop running processes
 ```
-
 
