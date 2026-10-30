@@ -35,6 +35,7 @@ pub struct ConnGet {
     pub family: i16,
     pub addr: IpAddr,
     pub port: u16,
+    pub comm: [u8; 16],
 }
 
 #[path = "./structs_impl.rs"]

@@ -27,8 +27,8 @@ struct connect_out {
     char v4[4];
     char v6[16];
   } addr;
-
   unsigned short port;
+  char name[16];
 };
 struct trace_entry {
   unsigned short type;
@@ -112,6 +112,7 @@ int handler(struct connect_ctx *ctx) {
   out_data->fd = ctx->fd;
 
   out_data->out_type = 1;
+  bpf_get_current_comm(out_data->name, sizeof(out_data->name));
   bpf_ringbuf_submit(out_data, 0);
 
   return 0;
@@ -143,6 +144,7 @@ int bind_handler(struct connect_ctx *ctx) {
     bpf_probe_read_user((void *)&out_data->port, 2, addr + 2);
   }
 
+  bpf_get_current_comm(out_data->name, sizeof(out_data->name));
   out_data->fd = ctx->fd;
 
   out_data->out_type = 2;

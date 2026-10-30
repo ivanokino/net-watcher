@@ -12,7 +12,7 @@ pub fn render_socket(app: &mut GuiApp, ui: &mut Ui) {
         .column(Column::exact(90.0)) // PID
         .column(Column::exact(100.0)) //FAMILY
         .column(Column::exact(100.0)) // TYPE
-        .column(Column::exact(120.0)) //NAME
+        .column(Column::exact(120.0)) //PROCESS NAME
         .header(24.0, |mut header| {
             header.col(|ui| {
                 ui.strong("NUM");
@@ -79,6 +79,7 @@ pub fn render_connect(app: &mut GuiApp, ui: &mut Ui) {
         .column(Column::exact(100.0)) //FAMILY
         .column(Column::exact(100.0)) // TYPE
         .column(Column::exact(70.0)) //PORT
+        .column(Column::exact(120.0)) // PROCESS NAME
         .header(24.0, |mut header| {
             header.col(|ui| {
                 ui.strong("NUM");
@@ -97,6 +98,9 @@ pub fn render_connect(app: &mut GuiApp, ui: &mut Ui) {
             });
             header.col(|ui| {
                 ui.strong("PORT");
+            });
+            header.col(|ui| {
+                ui.strong("NAME");
             });
         })
         .body(|body| {
@@ -121,6 +125,9 @@ pub fn render_connect(app: &mut GuiApp, ui: &mut Ui) {
                 });
                 row.col(|ui| {
                     ui.label(s.port_name());
+                });
+                row.col(|ui| {
+                    ui.label(s.comm_name());
                 });
                 if row.response().clicked() {
                     app.is_inf_click = true;
@@ -149,6 +156,7 @@ pub fn render_bind(app: &mut GuiApp, ui: &mut Ui) {
         .column(Column::exact(100.0)) //FAMILY
         .column(Column::exact(100.0)) // TYPE
         .column(Column::exact(70.0)) //PORT
+        .column(Column::exact(120.0)) // PROCESS NAME
         .header(24.0, |mut header| {
             header.col(|ui| {
                 ui.strong("NUM");
@@ -168,6 +176,9 @@ pub fn render_bind(app: &mut GuiApp, ui: &mut Ui) {
             });
             header.col(|ui| {
                 ui.strong("PORT");
+            });
+            header.col(|ui| {
+                ui.strong("NAME");
             });
         })
         .body(|body| {
@@ -192,6 +203,9 @@ pub fn render_bind(app: &mut GuiApp, ui: &mut Ui) {
                 });
                 row.col(|ui| {
                     ui.label(s.port_name());
+                });
+                row.col(|ui| {
+                    ui.label(s.comm_name());
                 });
                 if row.response().clicked() {
                     app.is_inf_click = true;
