@@ -1,4 +1,4 @@
-use crate::structs::{ConnGet, SockGet};
+use crate::structs::{ConnGet, ListenGet, SockGet};
 use std::borrow::Cow;
 use std::net::{Ipv4Addr, Ipv6Addr};
 impl ConnGet {
@@ -93,5 +93,16 @@ impl SockGet {
 
             _ => Cow::Owned(self.family.to_string()),
         }
+    }
+}
+
+impl ListenGet {
+    pub fn comm_name(&self) -> &str {
+        let len = self
+            .comm
+            .iter()
+            .position(|&c| c == 0)
+            .unwrap_or(self.comm.len());
+        std::str::from_utf8(&self.comm[..len]).unwrap_or("?")
     }
 }

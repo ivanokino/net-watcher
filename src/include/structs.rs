@@ -3,12 +3,14 @@ pub enum Tab {
     Socket,
     Connect,
     Bind,
+    Listen,
 }
 #[repr(C)]
 pub union HandlerOutput {
     pub sock_get: SockGet,
     pub conn_get: ConnGet,
     pub bind_get: ConnGet,
+    pub listen_get: ListenGet,
 }
 #[repr(C)]
 #[derive(Clone, Copy)]
@@ -35,6 +37,15 @@ pub struct ConnGet {
     pub family: i16,
     pub addr: IpAddr,
     pub port: u16,
+    pub comm: [u8; 16],
+}
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct ListenGet {
+    pub out_tyoe: u8,
+    pub pid: u32,
+    pub fd: u32,
+    pub backlog: u32,
     pub comm: [u8; 16],
 }
 

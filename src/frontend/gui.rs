@@ -1,5 +1,5 @@
 use common::net::run_data_streaming;
-use common::structs::{ConnGet, HandlerOutput, SockGet};
+use common::structs::{ConnGet, HandlerOutput, ListenGet, SockGet};
 
 use common::structs::Tab;
 use eframe::egui::{self};
@@ -12,7 +12,7 @@ use std::sync::mpsc::{Receiver, Sender};
 mod render_funcs;
 use render_funcs::{render_connect, render_socket};
 
-use crate::gui::render_funcs::render_bind;
+use crate::gui::render_funcs::{render_bind, render_listen};
 
 pub struct GuiApp {
     pub current_tab: Tab,
@@ -20,10 +20,12 @@ pub struct GuiApp {
     pub rx: Receiver<HandlerOutput>,
     pub sockets: VecDeque<SockGet>,
     pub connects: VecDeque<ConnGet>,
+    pub listens: VecDeque<ListenGet>,
     pub binds: VecDeque<ConnGet>,
     pub dropped_count: u32,
     pub dropped_count_connect: u32,
     pub dropped_count_bind: u32,
+    pub dropped_count_listen: u32,
     pub is_inf_click: bool,
     pub selected_info: String,
     pub det_stream: TcpStream,
@@ -36,6 +38,7 @@ impl eframe::App for GuiApp {
 
             ui.selectable_value(&mut self.current_tab, Tab::Connect, "CONNECT");
             ui.selectable_value(&mut self.current_tab, Tab::Bind, "BIND");
+            ui.selectable_value(&mut self.current_tab, Tab::Listen, "LISTEN");
         });
         while let Ok(data) = self.rx.try_recv() {
             let out_type: u8 = unsafe { data.conn_get.out_type };
@@ -54,11 +57,18 @@ impl eframe::App for GuiApp {
                         self.dropped_count_connect += 1;
                     }
                 },
-                _ => unsafe {
+                2 => unsafe {
                     self.binds.push_back(data.bind_get);
                     if self.binds.len() > 20000 {
                         self.binds.pop_front();
                         self.dropped_count_bind += 1;
+                    }
+                },
+                _ => unsafe {
+                    self.listens.push_back(data.listen_get);
+                    if self.listens.len() > 20000 {
+                        self.listens.pop_front();
+                        self.dropped_count_listen += 1;
                     }
                 },
             }
@@ -74,6 +84,9 @@ impl eframe::App for GuiApp {
             }
             Tab::Bind => {
                 render_bind(self, ui);
+            }
+            Tab::Listen => {
+                render_listen(self, ui);
             }
         }
     }
@@ -104,9 +117,11 @@ pub fn run_gui_and_data_streaming(
                 sockets: VecDeque::new(),
                 connects: VecDeque::new(),
                 binds: VecDeque::new(),
+                listens: VecDeque::new(),
                 dropped_count: 0,
                 dropped_count_connect: 0,
                 dropped_count_bind: 0,
+                dropped_count_listen: 0,
                 is_inf_click: false,
                 selected_info: "err".to_string(),
                 det_stream,

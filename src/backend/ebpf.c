@@ -30,6 +30,15 @@ struct connect_out {
   unsigned short port;
   char name[16];
 };
+
+struct listen_out {
+  unsigned char out_type;
+  int pid;
+  int sock_fd;
+  int backlog;
+  char name[16];
+};
+
 struct trace_entry {
   unsigned short type;
   unsigned char flags;
@@ -53,6 +62,12 @@ struct connect_ctx {
   long addrlen;              // addr struct len
   char __data[0];
 };
+struct listen_ctx {
+  struct trace_entry ent;
+  long syscall_nr;
+  int sockfd;
+  int backlog;
+};
 
 struct {
   __uint(type, BPF_MAP_TYPE_RINGBUF);
@@ -63,6 +78,11 @@ struct {
   __uint(type, BPF_MAP_TYPE_RINGBUF);
   __uint(max_entries, 512 * 1024);
 } ringbuff_connect SEC(".maps");
+
+struct {
+  __uint(type, BPF_MAP_TYPE_RINGBUF);
+  __uint(max_entries, 512 * 1024);
+} ringbuff_listen SEC(".maps");
 
 SEC("tracepoint/syscalls/sys_enter_socket")
 int handle(struct sys_enter_sock *ctx) {
@@ -149,6 +169,27 @@ int bind_handler(struct connect_ctx *ctx) {
 
   out_data->out_type = 2;
   bpf_ringbuf_submit(out_data, 0);
+
+  return 0;
+}
+
+SEC("tp/syscalls/sys_enter_listen")
+int listen_handler(struct listen_ctx *ctx) {
+  struct listen_out *out_data =
+      bpf_ringbuf_reserve(&ringbuff_listen, sizeof(struct listen_out), 0);
+  if (!out_data)
+    return 0;
+
+  out_data->sock_fd = ctx->sockfd;
+  out_data->pid = (__u32)((bpf_get_current_pid_tgid() >> 32));
+
+  out_data->backlog = ctx->backlog;
+
+  out_data->out_type = 3;
+  bpf_get_current_comm(out_data->name, sizeof(out_data->name));
+  bpf_ringbuf_submit(out_data, 0);
+
+
 
   return 0;
 }

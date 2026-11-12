@@ -145,6 +145,70 @@ pub fn render_connect(app: &mut GuiApp, ui: &mut Ui) {
         });
     }
 }
+pub fn render_listen(app: &mut GuiApp, ui: &mut Ui) {
+    TableBuilder::new(ui)
+        .striped(true)
+        .sense(egui::Sense::click())
+        .stick_to_bottom(true)
+        .column(Column::exact(70.0)) // NUM
+        .column(Column::exact(90.0)) // PID
+        .column(Column::exact(90.0)) // FD
+        .column(Column::exact(120.0)) // PROCESS NAME
+        .column(Column::exact(90.0)) // BACKLOG
+        .header(24.0, |mut header| {
+            header.col(|ui| {
+                ui.strong("NUM");
+            });
+            header.col(|ui| {
+                ui.strong("PID");
+            });
+            header.col(|ui| {
+                ui.strong("FD");
+            });
+            header.col(|ui| {
+                ui.strong("NAME");
+            });
+            header.col(|ui| {
+                ui.strong("BACKLOG");
+            });
+        })
+        .body(|body| {
+            body.rows(20.0, app.listens.len(), |mut row| {
+                let idx = row.index();
+                let s = &app.listens[idx];
+                row.col(|ui| {
+                    ui.label((app.dropped_count_bind + idx as u32 + 1).to_string());
+                });
+                row.col(|ui| {
+                    ui.label(s.pid.to_string());
+                });
+                row.col(|ui| {
+                    ui.label(s.fd.to_string());
+                });
+
+                row.col(|ui| {
+                    ui.label(s.comm_name());
+                });
+                row.col(|ui| {
+                    ui.label(s.backlog.to_string());
+                });
+                if row.response().clicked() {
+                    app.is_inf_click = true;
+                    get_det_data(app, s.pid);
+                }
+            });
+        });
+    if app.is_inf_click {
+        egui::Window::new("LISTEN").show(ui.ctx(), |ui| {
+            if ui.button("close").clicked() {
+                app.is_inf_click = false;
+            }
+
+            ui.label(&app.selected_info);
+        });
+    }
+}
+
 pub fn render_bind(app: &mut GuiApp, ui: &mut Ui) {
     TableBuilder::new(ui)
         .striped(true)
